@@ -5,7 +5,8 @@ import {
   FileOperations,
   TrainerInfo,
   PokemonParty,
-  QuickStart
+  QuickStart,
+  PcLanding
 } from './components'
 
 const samplePokemon = [
@@ -31,31 +32,37 @@ function App() {
   const [trainerMoney, setTrainerMoney] = useState(3000)
   const [pokemonParty, setPokemonParty] = useState([])
 
-  const handleFileUpload = useCallback((event) => {
-    const file = event.target.files[0]
-    if (!file) return
-    setFileName(file.name)
+  // Handle file load from PC Landing page (expects ArrayBuffer and filename)
+  const handleFileLoad = useCallback((arrayBuffer, name) => {
+    setFileName(name)
     setError(null)
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result)
-        setSaveData(data)
-        if (data.trainer) {
-          setTrainerName(data.trainer.name || 'Red')
-          setTrainerMoney(data.trainer.money || 3000)
-        }
-        if (data.pokemon && Array.isArray(data.pokemon)) {
-          setPokemonParty(data.pokemon.slice(0, 6))
-        } else {
-          setPokemonParty([])
-        }
-      } catch (err) {
-        setError('Invalid save file format. Please upload a valid JSON file.')
+    
+    // Try to decode as text/JSON first for compatibility with existing logic
+    const decoder = new TextDecoder('utf-8');
+    const textContent = decoder.decode(arrayBuffer);
+    
+    try {
+      const data = JSON.parse(textContent)
+      setSaveData(data)
+      if (data.trainer) {
+        setTrainerName(data.trainer.name || 'Red')
+        setTrainerMoney(data.trainer.money || 3000)
       }
+      if (data.pokemon && Array.isArray(data.pokemon)) {
+        setPokemonParty(data.pokemon.slice(0, 6))
+      } else {
+        setPokemonParty([])
+      }
+    } catch (err) {
+      // If not JSON, we might be dealing with a binary save file
+      // For now, we store the buffer and show a message or default state
+      console.warn("Non-JSON file detected. Binary parsing not yet implemented, loading default state.")
+      setError('Binary save files detected. Currently only JSON saves are fully supported for editing.')
+      setSaveData({ binary: true }) // Flag that we have binary data
+      setPokemonParty([])
+      setTrainerName('Unknown')
+      setTrainerMoney(0)
     }
-    reader.onerror = () => setError('Error reading file.')
-    reader.readAsText(file)
   }, [])
 
   const updatePokemon = useCallback((index, updates) => {
@@ -93,6 +100,11 @@ function App() {
   }, [])
 
   const downloadSaveFile = useCallback(() => {
+    if (saveData?.binary) {
+       setError('Cannot save: Original file was binary and binary editing is not yet supported.')
+       return;
+    }
+
     const updatedSaveData = {
       trainer: {
         name: trainerName,
@@ -147,6 +159,11 @@ function App() {
     setFileName('sample-save.json')
   }, [])
 
+  // If no save data is loaded, show the PC Landing Page
+  if (!saveData) {
+    return <PcLanding onFileLoad={handleFileLoad} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100">
       <Header />
@@ -155,7 +172,16 @@ function App() {
         <FileOperations
           fileName={fileName}
           hasSaveData={!!saveData}
-          onFileUpload={handleFileUpload}
+          onFileUpload={(e) => {
+             // Reuse logic for the file input inside FileOperations if needed, 
+             // but primarily we rely on PcLanding now. 
+             // This handles if they use the "Change File" button inside FileOperations.
+             const file = e.target.files[0]
+             if(!file) return;
+             const reader = new FileReader();
+             reader.onload = (ev) => handleFileLoad(ev.target.result, file.name);
+             reader.readAsArrayBuffer(file);
+          }}
           onCreateNew={createNewSave}
           onDownload={downloadSaveFile}
           error={error}
