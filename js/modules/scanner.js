@@ -1,8 +1,8 @@
 /**
  * Movie Library - Scanner Module
  * 
- * Handles folder scanning and movie detection using the File System Access API.
- * Scans directories for movie folders matching "Movie Name (Year)" pattern,
+ * Handles folder scanning and movie/TV show detection using the File System Access API.
+ * Scans directories for movie folders matching "Movie Name (Year)" or TV show folders,
  * detects video files, poster images, fanart, and NFO metadata files.
  * 
  * @module Scanner
@@ -16,6 +16,9 @@ var IMG_EXTS = ['.jpg','.jpeg','.png','.webp','.gif','.bmp'];
 
 // Regex pattern to match movie folder names: "Movie Name (Year)"
 var MOVIE_REGEX = /^(.+?)\s*\((\d{4})\)$/;
+
+// Regex pattern to match season folder names: "Season 1", "Season 01", "S01", etc.
+var SEASON_REGEX = /^(?:Season|S)\s*(\d+)$/i;
 
 /**
  * Process a single movie folder and extract metadata
@@ -190,6 +193,178 @@ async function processMovieFolder(fh, rootName) {
     };
 }
 
+/**
+ * Process a TV show folder and extract metadata for all seasons
+ * Scans the TV show folder for season subfolders, video files, images, and NFO metadata
+ * 
+ * @param {FileSystemDirectoryHandle} fh - Folder handle for the TV show directory
+ * @param {string} rootName - Name of the root library folder
+ * @returns {Promise<Object>} Object containing TV show data or rejection reason
+ */
+async function processTVShowFolder(fh, rootName) {
+    // Check if folder name matches "Series Name (Year)" pattern
+    var match = fh.name.match(MOVIE_REGEX);
+    if (!match) {
+        return { reason: 'Name does not match "Series (Year)"' };
+    }
+    
+    // Initialize handles for TV show level assets
+    var posterHandle = null, fanartHandle = null, logoHandle = null, nfoHandle = null, themeHandle = null;
+    var seasonFolders = [];
+    var seasonPosters = {};
+    
+    try {
+        // Scan all entries in the TV show folder
+        for await (var entry of fh.values()) {
+            if (entry.kind === 'directory') {
+                // Check if it's a season folder
+                var seasonMatch = entry.name.match(SEASON_REGEX);
+                if (seasonMatch) {
+                    seasonFolders.push({
+                        handle: entry,
+                        seasonNumber: parseInt(seasonMatch[1])
+                    });
+                }
+            } else if (entry.kind === 'file') {
+                var lo = entry.name.toLowerCase();
+                
+                // Identify image files based on naming conventions
+                if (IMG_EXTS.some(function(ext) { return lo.endsWith(ext); })) {
+                    if (lo.includes('fanart') || lo.includes('-fanart.') || lo === 'fanart.jpg' || lo === 'fanart.png') {
+                        if (!fanartHandle) fanartHandle = entry;
+                    } else if (lo.includes('clearlogo') || lo.includes('logo')) {
+                        if (!logoHandle) logoHandle = entry;
+                    } else if (lo === 'poster.jpg' || lo === 'poster.png' || lo.includes('folder.') || lo.includes('cover.')) {
+                        if (!posterHandle) posterHandle = entry;
+                    } else if (lo.startsWith('season') && lo.includes('poster')) {
+                        // Season-specific poster like season01-poster.jpg
+                        var seasonNumMatch = lo.match(/season(?:\s*|_)(\d+).*?\.(?:jpg|jpeg|png|webp)/i);
+                        if (seasonNumMatch) {
+                            var sNum = parseInt(seasonNumMatch[1]);
+                            if (!seasonPosters[sNum]) {
+                                seasonPosters[sNum] = entry;
+                            }
+                        }
+                    }
+                }
+                // Identify NFO metadata file
+                if (lo.endsWith('.nfo')) {
+                    nfoHandle = entry;
+                }
+                // Identify theme music
+                if (lo === 'theme.mp3' || lo === 'theme.m4a') {
+                    themeHandle = entry;
+                }
+            }
+        }
+    } catch(e) {
+        return { reason: 'Access denied' };
+    }
+    
+    // Validate: must have at least one season folder with video files
+    if (seasonFolders.length === 0) {
+        return { reason: 'No season folders found' };
+    }
+    
+    // Parse NFO file if present
+    var nfoData = null;
+    if (nfoHandle) {
+        try {
+            var nf = await nfoHandle.getFile();
+            var txt = await nf.text();
+            nfoData = window.NFOParser.parseNFO(txt);
+        } catch(e) {
+            console.error('NFO read error:', e);
+        }
+    }
+    
+    // Build full absolute path by traversing up the directory tree
+    var fullPath = '';
+    try {
+        var currentDir = fh;
+        var pathParts = [fh.name];
+        
+        while (currentDir && currentDir.parent) {
+            try {
+                var parentDir = currentDir.parent;
+                if (parentDir && parentDir.name) {
+                    pathParts.unshift(parentDir.name);
+                    currentDir = parentDir;
+                } else {
+                    break;
+                }
+            } catch(e) {
+                break;
+            }
+        }
+        
+        fullPath = pathParts.join('/');
+    } catch(e) {
+        console.log('[Scanner Debug] Could not build full path:', e);
+        fullPath = rootName + '/' + fh.name;
+    }
+    
+    // Sort season folders by season number
+    seasonFolders.sort(function(a, b) {
+        return a.seasonNumber - b.seasonNumber;
+    });
+    
+    // Collect all video files from all seasons
+    var totalEpisodes = 0;
+    var firstVideoHandle = null;
+    var totalSize = 0;
+    
+    for (var si = 0; si < seasonFolders.length; si++) {
+        var season = seasonFolders[si];
+        try {
+            for await (var epEntry of season.handle.values()) {
+                if (epEntry.kind === 'file') {
+                    var epLo = epEntry.name.toLowerCase();
+                    if (VIDEO_EXTS.some(function(ext) { return epLo.endsWith(ext); })) {
+                        totalEpisodes++;
+                        if (!firstVideoHandle) firstVideoHandle = epEntry;
+                        try {
+                            var vf = await epEntry.getFile();
+                            totalSize += vf.size;
+                        } catch(e) {}
+                    }
+                }
+            }
+        } catch(e) {
+            console.warn('Could not scan season ' + season.seasonNumber + ':', e);
+        }
+    }
+    
+    if (totalEpisodes === 0) {
+        return { reason: 'No video files found in seasons' };
+    }
+    
+    // Return complete TV show object
+    return {
+        tvshow: {
+            title: match[1].trim(),
+            year: match[2],
+            posterHandle: posterHandle,
+            fanartHandle: fanartHandle,
+            logoHandle: logoHandle,
+            hasNfo: !!nfoHandle,
+            fileSize: totalSize,
+            relativePath: rootName + '/' + fh.name,
+            fullPath: fullPath,
+            posterUrl: null,
+            logoUrl: null,
+            fanartUrl: null,
+            nfoData: nfoData,
+            isTVShow: true,
+            seasonFolders: seasonFolders,
+            seasonPosters: seasonPosters,
+            totalSeasons: seasonFolders.length,
+            totalEpisodes: totalEpisodes,
+            themeHandle: themeHandle
+        }
+    };
+}
+
 async function scanFolders(dirs) {
     window.allMovies = [];
     window.skippedFolders = [];
@@ -214,11 +389,18 @@ async function scanFolders(dirs) {
             document.getElementById('loadingProgress').textContent = 
                 'Path ' + (d+1) + '/' + dirs.length + ' | ' + (i + 1) + ' / ' + total;
             
-            var r = await processMovieFolder(entries[i], dir.name);
-            if (r.movie) {
-                window.allMovies.push(r.movie);
-            } else if (r.reason) {
-                window.skippedFolders.push({ name: entries[i].name, reason: r.reason });
+            // First try to process as TV show folder
+            var r = await processTVShowFolder(entries[i], dir.name);
+            if (r.tvshow) {
+                window.allMovies.push(r.tvshow);
+            } else {
+                // If not a TV show, try processing as movie
+                r = await processMovieFolder(entries[i], dir.name);
+                if (r.movie) {
+                    window.allMovies.push(r.movie);
+                } else if (r.reason) {
+                    window.skippedFolders.push({ name: entries[i].name, reason: r.reason });
+                }
             }
         }
     }
@@ -229,4 +411,4 @@ async function scanFolders(dirs) {
 }
 
 // Export for use in other modules
-window.Scanner = { processMovieFolder, scanFolders, VIDEO_EXTS, IMG_EXTS, MOVIE_REGEX };
+window.Scanner = { processMovieFolder, processTVShowFolder, scanFolders, VIDEO_EXTS, IMG_EXTS, MOVIE_REGEX, SEASON_REGEX };

@@ -15,8 +15,10 @@ var VIEW_MODES = {
 
 function updateStats() {
     var ts = window.allMovies.reduce(function(s, m) { return s + m.fileSize; }, 0);
+    var movieCount = window.allMovies.filter(function(m) { return !m.isTVShow; }).length;
+    var tvShowCount = window.allMovies.filter(function(m) { return m.isTVShow; }).length;
     document.getElementById('headerStats').textContent =
-        window.allMovies.length + ' movies \u2022 ' + window.Utils.formatBytes(ts) + ' total';
+        window.allMovies.length + ' titles (' + movieCount + ' movies' + (tvShowCount > 0 ? ', ' + tvShowCount + ' TV shows' : '') + ') \u2022 ' + window.Utils.formatBytes(ts) + ' total';
     document.getElementById('skippedCount').textContent = window.skippedFolders.length;
     document.getElementById('skippedList').innerHTML = window.skippedFolders.map(function(s) {
         return '<li><strong>' + window.Utils.escHtml(s.name) + '</strong> \u2014 ' + window.Utils.escHtml(s.reason) + '</li>';
@@ -156,6 +158,8 @@ function renderMovies() {
         h = '<div class="movie-grid">' + window.filteredMovies.map(function(m, i) {
             var r = m.nfoData && m.nfoData.rating;
             var hasPoster = !!m.posterHandle;
+            var isTV = m.isTVShow;
+            var episodesInfo = isTV ? (m.totalEpisodes + ' eps' + (m.totalSeasons ? ' \\u2022 ' + m.totalSeasons + ' seasons' : '')) : '';
             return '<div class="movie-card" onclick="showDetailPage(' + i + ')">' +
                 '<div class="poster-container">' +
                     (m.logoHandle ? '<img class="logo-img" data-idx="' + i + '">' : '') +
@@ -181,11 +185,13 @@ function renderMovies() {
                         '</svg>' + r.toFixed(1) +
                     '</div>' : '') +
                     (m.quality ? '<span class="movie-quality">' + window.Utils.escHtml(m.quality) + '</span>' : '') +
+                    (isTV ? '<span class="movie-quality tv-badge">TV Series</span>' : '') +
                 '</div>' +
                 '<div class="card-info">' +
                     '<div class="movie-title">' + window.Utils.escHtml(m.title) + '</div>' +
                     '<div class="movie-year">' + m.year +
-                        (m.nfoData && m.nfoData.runtime ? ' \u2022 ' + m.nfoData.runtime + 'm' : '') +
+                        (episodesInfo ? ' \\u2022 ' + episodesInfo : 
+                         (m.nfoData && m.nfoData.runtime ? ' \\u2022 ' + m.nfoData.runtime + 'm' : '')) +
                     '</div>' +
                     (m.nfoData && m.nfoData.genres && m.nfoData.genres.length ?
                         '<div class="movie-genre">' + m.nfoData.genres.map(window.Utils.escHtml).join(', ') + '</div>' : '') +

@@ -201,7 +201,13 @@ async function startScanning(dirs) {
     document.getElementById('appContainer').classList.add('active');
     window.UIRenderer.updateStats();
     window.UIRenderer.filterMovies();
-    window.Utils.showToast('Found ' + window.allMovies.length + ' movies', 'success');
+    var movieCount = window.allMovies.filter(function(m) { return !m.isTVShow; }).length;
+    var tvShowCount = window.allMovies.filter(function(m) { return m.isTVShow; }).length;
+    var msg = 'Found ' + window.allMovies.length + ' titles';
+    if (tvShowCount > 0) {
+        msg += ' (' + movieCount + ' movies, ' + tvShowCount + ' TV shows)';
+    }
+    window.Utils.showToast(msg, 'success');
 }
 
 // Export for use in other modules
