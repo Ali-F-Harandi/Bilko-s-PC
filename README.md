@@ -1,219 +1,193 @@
-# ⚡ Pokémon Save Editor
+# ⚡ Movie Library
 
-A modern web-based Pokémon save file editor built with React, Tailwind CSS, and Vite. Edit your trainer information, manage your Pokémon party, and customize your game saves with ease.
+A modern web-based movie collection manager built with vanilla JavaScript and CSS. Organize your local movie files, browse with beautiful posters, play videos directly in the browser, and enjoy multiple theme options.
 
-![Pokémon Save Editor](https://img.shields.io/badge/React-18.2.0-blue?logo=react)
-![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4.0-38B2AC?logo=tailwind-css)
-![Vite](https://img.shields.io/badge/Vite-5.0.8-646CFF?logo=vite)
+![Movie Library](https://img.shields.io/badge/JavaScript-ES6+-yellow?logo=javascript)
+![CSS](https://img.shields.io/badge/CSS3-Custom_Properties-blue?logo=css3)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## ✨ Features
 
-- **📁 File Operations**
-  - Upload existing save files (JSON format)
-  - Create new save files from scratch
-  - Download modified save files
-  
-- **👤 Trainer Information**
-  - Edit trainer name (up to 12 characters)
-  - Modify money amount (₽)
-  - Track badge progress
+- **📁 Folder Management**
+  - Select folders containing your movie collection using the File System Access API
+  - Add multiple folders to your library
+  - Resume previous sessions with saved folder handles
+  - Support for Chrome and Edge browsers
 
-- **🎒 Pokémon Party Management**
-  - Add up to 6 Pokémon to your party
-  - Edit Pokémon details:
-    - Nickname
-    - Level (1-100)
-    - HP and Max HP
-    - Attack, Defense, and Speed stats
-    - Experience points
-    - Moves (select from available moves)
-  - Type-based color coding for all Pokémon types
-  - Remove Pokémon from party
+- **🎬 Movie Organization**
+  - Automatic movie detection from folder names (format: "Movie Name (Year)")
+  - Poster and fanart image recognition
+  - NFO metadata parsing (Kodi-compatible format)
+  - Quality detection from filenames (720p, 1080p, 4K, etc.)
 
-- **🎮 Quick Start**
-  - Load sample data to try out the editor
-  - Pre-populated with popular Pokémon
+- **🎨 Multiple View Modes**
+  - **Grid View**: Classic poster grid layout
+  - **Detail View**: Expanded cards with more information
+  - **List View**: Compact list for quick browsing
+
+- **🎭 Theme Support**
+  - Netflix Dark (default)
+  - Ocean Blue
+  - Cyberpunk
+  - Amber Gold
+  - Forest Green
+  - Light Clean
+
+- **🔍 Search & Filter**
+  - Real-time search by title, year, quality, genres, and tags
+  - Sort by name, year, rating, or file size
+  - Filter count display
+
+- **📊 Rich Metadata Display**
+  - Movie ratings and vote counts
+  - Runtime, year, and certification
+  - Genres and tags
+  - Director, writer, and cast information
+  - Technical specs (video codec, resolution, audio)
+  - File size and filename details
+  - IMDb and TMDb links
+
+- **▶️ Built-in Video Player**
+  - Play movies directly in the browser
+  - Navigate between movies with prev/next controls
+  - Keyboard shortcuts (Arrow keys, Escape)
+
+- **💾 Persistent Settings**
+  - Theme preference saved locally
+  - View mode preference saved
+  - Folder handles stored in IndexedDB
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- npm or yarn
+- **Browser**: Chrome or Edge (required for File System Access API support)
+- Modern browser with ES6+ JavaScript support
 
-### Installation
+### Usage
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/pokemon-save-editor.git
-   cd pokemon-save-editor
-   ```
+1. **Open the Application**
+   - Simply open `index.html` in your browser
+   - No installation or build process required
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+2. **Select Movie Folder**
+   - Click "Select Movie Folder" button
+   - Choose a folder containing your movie collection
+   - Recommended structure: `Movie Name (Year) / [video, poster, fanart, nfo]`
 
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+3. **Add More Folders** (Optional)
+   - Click "Add Folder" to include additional movie directories
+   - All folders are saved for future sessions
 
-4. **Open your browser**
-   Navigate to `http://localhost:5173`
+4. **Resume Session**
+   - If you've previously selected folders, click "Resume Last Session"
+   - Your library will load automatically with granted permissions
 
-### Building for Production
+### Supported File Formats
 
-```bash
-npm run build
+- **Video**: MP4, MKV, WebM, AVI, MOV, WMV, FLV, M4V, TS, MPG, MPEG
+- **Images**: JPG, JPEG, PNG, WEBP, GIF, BMP (for posters and fanart)
+- **Metadata**: NFO files (Kodi-compatible XML format)
+
+### Recommended Folder Structure
+
+```
+Movies/
+├── The Matrix (1999)/
+│   ├── matrix.mp4              # Video file
+│   ├── poster.jpg              # Movie poster
+│   ├── fanart.jpg              # Background image
+│   └── The Matrix (1999).nfo   # Metadata file
+├── Inception (2010)/
+│   ├── inception.mkv
+│   ├── poster.png
+│   └── fanart.webp
+└── Interstellar (2014)/
+    ├── interstellar.mp4
+    └── cover.jpg
 ```
 
-The built files will be in the `dist/` directory.
+### NFO File Format
 
-### Preview Production Build
+The application supports Kodi-style NFO files with the following information:
+- Title, year, plot outline
+- Rating and vote count
+- Runtime, certification
+- Genres, tags
+- Director, writers, cast
+- Technical specs (video/audio codecs, resolution)
+- IMDb and TMDb IDs
 
-```bash
-npm run preview
-```
+## 🎨 Themes
 
-## 🌐 Deployment to GitHub Pages
+Switch between 6 beautiful themes using the Theme button in the header:
 
-This project includes a GitHub Actions workflow that automatically builds and deploys the application to GitHub Pages after every commit to the main branch.
+1. **Netflix Dark** - Classic dark theme with red accents
+2. **Ocean Blue** - Cool blue tones for a calming experience
+3. **Cyberpunk** - Vibrant pink and purple neon style
+4. **Amber Gold** - Warm golden hues
+5. **Forest Green** - Natural green palette
+6. **Light Clean** - Bright, minimal light theme
 
-### Setup Instructions
+Theme preference is automatically saved and restored on next visit.
 
-1. **Push to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/pokemon-save-editor.git
-   git push -u origin main
-   ```
+## 🔧 Keyboard Shortcuts
 
-2. **Configure GitHub Pages**
-   - Go to your repository on GitHub
-   - Navigate to **Settings** → **Pages**
-   - Under **Build and deployment**:
-     - Source: Select **GitHub Actions**
-   - The workflow will automatically deploy your site
-
-3. **Manual Deployment** (Optional)
-   ```bash
-   npm run deploy
-   ```
-
-### How the CI/CD Works
-
-The `.github/workflows/build-and-deploy.yml` file contains:
-- Automatic triggers on pushes to `main` or `master` branches
-- Manual trigger option via GitHub Actions tab
-- Build job that installs dependencies and creates production build
-- Deploy job that publishes to GitHub Pages
-- Concurrent deployment prevention
+When viewing movies:
+- **Escape**: Close detail page or player
+- **Arrow Left**: Previous movie (in player)
+- **Arrow Right**: Next movie (in player)
 
 ## 📁 Project Structure
 
 ```
-pokemon-save-editor/
-├── .github/
-│   └── workflows/
-│       └── build-and-deploy.yml    # CI/CD workflow
-├── public/                         # Static assets
-├── src/
-│   ├── App.jsx                     # Main application component
-│   ├── main.jsx                    # Application entry point
-│   └── index.css                   # Global styles with Tailwind
-├── index.html                      # HTML template
-├── package.json                    # Project dependencies
-├── postcss.config.js               # PostCSS configuration
-├── tailwind.config.js              # Tailwind CSS configuration
-├── vite.config.js                  # Vite configuration
-└── README.md                       # This file
+movie-library/
+├── index.html      # Main application file (HTML, CSS, and JavaScript)
+└── README.md       # This file
 ```
 
-## 🎮 Usage Guide
+## 💡 How It Works
 
-### Creating a New Save
+The Movie Library application uses modern web technologies:
 
-1. Click the **"📄 New Save"** button
-2. Enter your trainer name and starting money
-3. Add Pokémon to your party using **"➕ Add Pokémon"**
-4. Customize each Pokémon's stats and moves
-5. Click **"💾 Download Save"** to save your file
+- **File System Access API**: Direct access to your local folders (Chrome/Edge only)
+- **IndexedDB**: Persistent storage for folder handles and settings
+- **CSS Custom Properties**: Theme system with 6 color schemes
+- **Vanilla JavaScript**: No frameworks or build tools required
 
-### Editing an Existing Save
+### Key Technologies
 
-1. Click **"📤 Upload Save"** and select your JSON save file
-2. Modify trainer information as needed
-3. Edit Pokémon in your party
-4. Download the modified save file
+1. **Folder Scanning**: Recursively scans selected directories for movie folders
+2. **NFO Parsing**: Extracts metadata from Kodi-compatible XML files
+3. **Object URLs**: Creates temporary URLs for playing local video files
+4. **Lazy Loading**: Loads images on demand for better performance
 
-### Save File Format
+## ⚠️ Important Notes
 
-The save files use JSON format with the following structure:
-
-```json
-{
-  "trainer": {
-    "name": "Red",
-    "money": 3000,
-    "badges": []
-  },
-  "pokemon": [
-    {
-      "id": 25,
-      "name": "Pikachu",
-      "nickname": "Sparky",
-      "level": 50,
-      "hp": 100,
-      "maxHp": 120,
-      "attack": 110,
-      "defense": 80,
-      "speed": 180,
-      "exp": 50000,
-      "type": ["electric"],
-      "moves": ["Thunder Shock", "Quick Attack"]
-    }
-  ],
-  "lastModified": "2024-01-01T00:00:00.000Z"
-}
-```
-
-## 🛠️ Technologies Used
-
-- **React 18.2** - UI library
-- **Vite 5.0** - Build tool and dev server
-- **Tailwind CSS 3.4** - Utility-first CSS framework
-- **GitHub Actions** - CI/CD automation
-- **gh-pages** - Deployment utility
+- **Browser Security**: The File System Access API requires user permission for each folder
+- **Session Persistence**: Folder handles are saved, but permissions may need re-granting
+- **Local Files Only**: Videos are played from your local drive, not streamed
+- **Drive Letters**: Browser security hides actual drive letters in copied paths
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Feel free to:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Submit a Pull Request
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## ⚠️ Disclaimer
+## 🔒 Privacy & Security
 
-This is a fan-made project and is not affiliated with Nintendo, The Pokémon Company, or Game Freak. Pokémon and all related names are trademarks of their respective owners.
-
-## 🙏 Acknowledgments
-
-- Pokémon data inspired by the official Pokémon games
-- Type colors based on official Pokémon type badges
-- Built with love by fans, for fans
+- **No Data Upload**: All data stays on your local machine
+- **No Tracking**: No analytics or telemetry
+- **No Server**: Everything runs locally in your browser
+- **Permission-Based**: Requires explicit permission to access folders
 
 ---
 
-**Happy Training!** 🎮⚡
+**Enjoy Your Movie Collection!** 🎬🍿
