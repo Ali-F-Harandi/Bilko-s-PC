@@ -272,8 +272,10 @@ async function copyMoviePath(idx) {
     var m = window.filteredMovies[idx];
     if (!m) return;
     try {
-        await navigator.clipboard.writeText(m.relativePath);
-        window.Utils.showToast('Path copied to clipboard', 'success');
+        // Use fullPath if available, otherwise fall back to relativePath
+        const pathToCopy = m.fullPath || m.relativePath;
+        await navigator.clipboard.writeText(pathToCopy);
+        window.Utils.showToast('Full path copied to clipboard', 'success');
     } catch(e) {
         window.Utils.showToast('Failed to copy path', 'warning');
     }

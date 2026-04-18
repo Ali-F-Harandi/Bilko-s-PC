@@ -514,3 +514,79 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background
 #viewToggle.hidden {
     display: none;
 }
+
+/* Player subtitle menu styles */
+.player-subtitle-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.player-control-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.player-control-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+.player-control-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+}
+
+.player-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-width: 180px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: none;
+    z-index: 200;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.player-dropdown.active {
+    display: block;
+}
+
+.player-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.player-dropdown-item:hover {
+    background: var(--bg-hover);
+}
+
+.player-dropdown-item:first-child {
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: var(--accent);
+}
