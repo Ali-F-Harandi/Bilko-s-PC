@@ -8,6 +8,43 @@
  * @module Scanner
  */
 
+/**
+ * Build full absolute path by traversing up the directory tree
+ * Creates a complete path like "D:/Movies/American Reunion (2012)"
+ * 
+ * @param {FileSystemDirectoryHandle} fh - Folder handle to build path from
+ * @returns {string} Full absolute path
+ */
+function buildFullPath(fh) {
+    var fullPath = '';
+    try {
+        var currentDir = fh;
+        var pathParts = [fh.name];
+        
+        // Traverse parent directories until reaching root
+        while (currentDir && currentDir.parent) {
+            try {
+                var parentDir = currentDir.parent;
+                if (parentDir && parentDir.name) {
+                    pathParts.unshift(parentDir.name);
+                    currentDir = parentDir;
+                } else {
+                    break;
+                }
+            } catch(e) {
+                break;
+            }
+        }
+        
+        // Join path parts with forward slashes for cross-platform compatibility
+        fullPath = pathParts.join('/');
+    } catch(e) {
+        console.log('[Scanner Debug] Could not build full path:', e);
+    }
+    
+    return fullPath;
+}
+
 // Supported video file extensions
 var VIDEO_EXTS = ['.mp4','.mkv','.webm','.avi','.mov','.wmv','.flv','.m4v','.ts','.mpg','.mpeg'];
 
@@ -110,32 +147,9 @@ async function processMovieFolder(fh, rootName) {
     // Extract quality information from filename (e.g., 1080p, 4K, BluRay)
     var qm = videoHandle.name.match(/(\d{3,4}p|720p|1080p|2160p|4[kK]|HDR|Blu-?ray|WEB-?DL|WEBRip|HDTV)/i);
     
-    // Build full absolute path by traversing up the directory tree
-    // This creates a complete path like "D:/Movies/American Reunion (2012)"
-    var fullPath = '';
-    try {
-        var currentDir = fh;
-        var pathParts = [fh.name];
-        
-        // Traverse parent directories until reaching root
-        while (currentDir && currentDir.parent) {
-            try {
-                var parentDir = currentDir.parent;
-                if (parentDir && parentDir.name) {
-                    pathParts.unshift(parentDir.name);
-                    currentDir = parentDir;
-                } else {
-                    break;
-                }
-            } catch(e) {
-                break;
-            }
-        }
-        
-        // Join path parts with forward slashes for cross-platform compatibility
-        fullPath = pathParts.join('/');
-    } catch(e) {
-        console.log('[Scanner Debug] Could not build full path:', e);
+    // Build full absolute path using shared utility function
+    var fullPath = buildFullPath(fh);
+    if (!fullPath) {
         fullPath = rootName + '/' + fh.name;
     }
     
@@ -278,29 +292,9 @@ async function processTVShowFolder(fh, rootName) {
         }
     }
     
-    // Build full absolute path by traversing up the directory tree
-    var fullPath = '';
-    try {
-        var currentDir = fh;
-        var pathParts = [fh.name];
-        
-        while (currentDir && currentDir.parent) {
-            try {
-                var parentDir = currentDir.parent;
-                if (parentDir && parentDir.name) {
-                    pathParts.unshift(parentDir.name);
-                    currentDir = parentDir;
-                } else {
-                    break;
-                }
-            } catch(e) {
-                break;
-            }
-        }
-        
-        fullPath = pathParts.join('/');
-    } catch(e) {
-        console.log('[Scanner Debug] Could not build full path:', e);
+    // Build full absolute path using shared utility function
+    var fullPath = buildFullPath(fh);
+    if (!fullPath) {
         fullPath = rootName + '/' + fh.name;
     }
     
@@ -476,4 +470,4 @@ async function scanFolders(dirs) {
 }
 
 // Export for use in other modules
-window.Scanner = { processMovieFolder, processTVShowFolder, scanFolders, VIDEO_EXTS, IMG_EXTS, MOVIE_REGEX, SEASON_REGEX };
+window.Scanner = { processMovieFolder, processTVShowFolder, scanFolders, buildFullPath, VIDEO_EXTS, IMG_EXTS, MOVIE_REGEX, SEASON_REGEX };

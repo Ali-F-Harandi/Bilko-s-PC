@@ -414,8 +414,12 @@ async function loadSeasonPoster(m, seasonIdx) {
     if (handleToUse) {
         try {
             var file = await handleToUse.getFile();
-            var url = URL.createObjectURL(file);
-            posterImg.src = url;
+            // Revoke previous season poster URL if exists to prevent memory leaks
+            if (m.seasonPosterUrl) {
+                URL.revokeObjectURL(m.seasonPosterUrl);
+            }
+            m.seasonPosterUrl = URL.createObjectURL(file);
+            posterImg.src = m.seasonPosterUrl;
             posterImg.classList.add('loaded');
         } catch(e) {
             console.warn('Could not load season poster:', e);
