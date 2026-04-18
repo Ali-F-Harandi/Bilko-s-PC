@@ -309,27 +309,92 @@ async function processTVShowFolder(fh, rootName) {
         return a.seasonNumber - b.seasonNumber;
     });
     
-    // Collect all video files from all seasons
+    // Collect all video files from all seasons with detailed episode data
     var totalEpisodes = 0;
     var firstVideoHandle = null;
     var totalSize = 0;
     
     for (var si = 0; si < seasonFolders.length; si++) {
         var season = seasonFolders[si];
+        season.episodes = [];
+        season.subtitleFiles = [];
+        var epIndex = 0;
+        
         try {
+            var seasonEntries = [];
             for await (var epEntry of season.handle.values()) {
-                if (epEntry.kind === 'file') {
-                    var epLo = epEntry.name.toLowerCase();
+                seasonEntries.push(epEntry);
+            }
+            
+            // Sort entries alphabetically for consistent episode ordering
+            seasonEntries.sort(function(a, b) {
+                return a.name.localeCompare(b.name);
+            });
+            
+            for (var ei = 0; ei < seasonEntries.length; ei++) {
+                var entry = seasonEntries[ei];
+                if (entry.kind === 'file') {
+                    var epLo = entry.name.toLowerCase();
+                    
+                    // Detect video files
                     if (VIDEO_EXTS.some(function(ext) { return epLo.endsWith(ext); })) {
                         totalEpisodes++;
-                        if (!firstVideoHandle) firstVideoHandle = epEntry;
+                        epIndex++;
+                        if (!firstVideoHandle) firstVideoHandle = entry;
+                        
+                        var epSize = 0;
                         try {
-                            var vf = await epEntry.getFile();
+                            var vf = await entry.getFile();
+                            epSize = vf.size;
                             totalSize += vf.size;
                         } catch(e) {}
+                        
+                        // Try to extract episode number from filename
+                        // Patterns: S01E01, s01e01, 1x01, E01, Episode 1, etc.
+                        var epNumMatch = entry.name.match(/[Ss]\d+[Ee](\d+)/) ||
+                                        entry.name.match(/\d+x(\d+)/) ||
+                                        entry.name.match(/[Ee]p?(\d+)/) ||
+                                        entry.name.match(/[Ee]pisode[._\s]?(\d+)/);
+                        
+                        var detectedEpNum = epNumMatch ? parseInt(epNumMatch[1]) : epIndex;
+                        
+                        // Extract quality info from filename
+                        var epQuality = entry.name.match(/(\d{3,4}p|720p|1080p|2160p|4[kK]|HDR|Blu-?ray|WEB-?DL|WEBRip|HDTV)/i);
+                        
+                        // Generate clean episode title from filename
+                        var epTitle = entry.name.replace(/\.[^.]+$/, ''); // Remove extension
+                        // Try to extract episode title after S01E01 pattern
+                        var titleMatch = epTitle.match(/[Ss]\d+[Ee]\d+[^a-zA-Z0-9]*(.*)/i);
+                        if (titleMatch && titleMatch[1] && titleMatch[1].trim().length > 0) {
+                            epTitle = titleMatch[1].replace(/[._-]/g, ' ').trim();
+                        } else {
+                            epTitle = 'Episode ' + detectedEpNum;
+                        }
+                        
+                        season.episodes.push({
+                            handle: entry,
+                            fileName: entry.name,
+                            episodeNumber: detectedEpNum,
+                            title: epTitle,
+                            fileSize: epSize,
+                            quality: epQuality ? epQuality[1] : '',
+                            seasonHandle: season.handle
+                        });
+                    }
+                    
+                    // Detect subtitle files for episodes
+                    if (epLo.endsWith('.srt') || epLo.endsWith('.vtt') || epLo.endsWith('.ass') || 
+                        epLo.endsWith('.ssa') || epLo.endsWith('.sub')) {
+                        season.subtitleFiles.push(entry);
                     }
                 }
             }
+            
+            // Sort episodes by detected episode number
+            season.episodes.sort(function(a, b) {
+                return a.episodeNumber - b.episodeNumber;
+            });
+            
         } catch(e) {
             console.warn('Could not scan season ' + season.seasonNumber + ':', e);
         }
