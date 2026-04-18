@@ -9,9 +9,17 @@ window.skippedFolders = [];
 // Keyboard Shortcuts
 document.addEventListener('keydown', function(e) {
     if (document.getElementById('playerModal').classList.contains('active')) {
-        if (e.key === 'ArrowLeft') window.VideoPlayer.playMovie(window.VideoPlayer.getCurrentIndex() - 1);
-        if (e.key === 'ArrowRight') window.VideoPlayer.playMovie(window.VideoPlayer.getCurrentIndex() + 1);
-        if (e.key === 'Escape') window.VideoPlayer.closePlayer();
+        if (window.VideoPlayer.isPlayingTVShow()) {
+            // TV Show player shortcuts
+            if (e.key === 'ArrowLeft') window.playPrevEpisode();
+            if (e.key === 'ArrowRight') window.playNextEpisode();
+            if (e.key === 'Escape') window.VideoPlayer.closePlayer();
+        } else {
+            // Movie player shortcuts
+            if (e.key === 'ArrowLeft') window.VideoPlayer.playMovie(window.VideoPlayer.getCurrentIndex() - 1);
+            if (e.key === 'ArrowRight') window.VideoPlayer.playMovie(window.VideoPlayer.getCurrentIndex() + 1);
+            if (e.key === 'Escape') window.VideoPlayer.closePlayer();
+        }
     } else if (document.getElementById('detailPage').classList.contains('active')) {
         if (e.key === 'Escape') window.DetailPage.closeDetailPage();
     }
