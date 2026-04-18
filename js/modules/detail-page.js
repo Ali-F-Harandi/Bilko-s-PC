@@ -385,3 +385,20 @@ window.DetailPage = { showDetailPage, closeDetailPage, copyMoviePath, goToCollec
 // Also expose as global functions for inline HTML handlers
 window.showDetailPage = showDetailPage;
 window.closeDetailPage = closeDetailPage;
+
+// Handle prev/next button clicks - works for both movies and TV episodes
+window.handlePrevClick = function() {
+    if (window.currentTVEpisode) {
+        playPrevEpisode();
+    } else {
+        playMovie(currentMovieIndex - 1);
+    }
+};
+
+window.handleNextClick = function() {
+    if (window.currentTVEpisode) {
+        playNextEpisode();
+    } else {
+        playMovie(currentMovieIndex + 1);
+    }
+};

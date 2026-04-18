@@ -18,10 +18,10 @@ function updateStats() {
     var movieCount = window.allMovies.filter(function(m) { return !m.isTVShow; }).length;
     var tvShowCount = window.allMovies.filter(function(m) { return m.isTVShow; }).length;
     document.getElementById('headerStats').textContent =
-        window.allMovies.length + ' titles (' + movieCount + ' movies' + (tvShowCount > 0 ? ', ' + tvShowCount + ' TV shows' : '') + ') \u2022 ' + window.Utils.formatBytes(ts) + ' total';
+        window.allMovies.length + ' titles (' + movieCount + ' movies' + (tvShowCount > 0 ? ', ' + tvShowCount + ' TV shows' : '') + ') • ' + window.Utils.formatBytes(ts) + ' total';
     document.getElementById('skippedCount').textContent = window.skippedFolders.length;
     document.getElementById('skippedList').innerHTML = window.skippedFolders.map(function(s) {
-        return '<li><strong>' + window.Utils.escHtml(s.name) + '</strong> \u2014 ' + window.Utils.escHtml(s.reason) + '</li>';
+        return '<li><strong>' + window.Utils.escHtml(s.name) + '</strong> — ' + window.Utils.escHtml(s.reason) + '</li>';
     }).join('');
 }
 
@@ -159,7 +159,7 @@ function renderMovies() {
             var r = m.nfoData && m.nfoData.rating;
             var hasPoster = !!m.posterHandle;
             var isTV = m.isTVShow;
-            var episodesInfo = isTV ? (m.totalEpisodes + ' eps' + (m.totalSeasons ? ' \\u2022 ' + m.totalSeasons + ' seasons' : '')) : '';
+            var episodesInfo = isTV ? (m.totalEpisodes + ' eps' + (m.totalSeasons ? ' • ' + m.totalSeasons + ' seasons' : '')) : '';
             return '<div class="movie-card" onclick="showDetailPage(' + i + ')">' +
                 '<div class="poster-container">' +
                     (m.logoHandle ? '<img class="logo-img" data-idx="' + i + '">' : '') +
@@ -190,8 +190,8 @@ function renderMovies() {
                 '<div class="card-info">' +
                     '<div class="movie-title">' + window.Utils.escHtml(m.title) + '</div>' +
                     '<div class="movie-year">' + m.year +
-                        (episodesInfo ? ' \\u2022 ' + episodesInfo : 
-                         (m.nfoData && m.nfoData.runtime ? ' \\u2022 ' + m.nfoData.runtime + 'm' : '')) +
+                        (episodesInfo ? ' • ' + episodesInfo : 
+                         (m.nfoData && m.nfoData.runtime ? ' • ' + m.nfoData.runtime + 'm' : '')) +
                     '</div>' +
                     (m.nfoData && m.nfoData.genres && m.nfoData.genres.length ?
                         '<div class="movie-genre">' + m.nfoData.genres.map(window.Utils.escHtml).join(', ') + '</div>' : '') +
@@ -208,7 +208,7 @@ function renderMovies() {
                 '<div class="detail-info">' +
                     '<div class="detail-title">' + window.Utils.escHtml(m.title) + '</div>' +
                     '<div style="color:var(--text-secondary);margin-bottom:.3rem">' + m.year +
-                        (m.nfoData && m.nfoData.runtime ? ' \u2022 ' + m.nfoData.runtime + ' min' : '') +
+                        (m.nfoData && m.nfoData.runtime ? ' • ' + m.nfoData.runtime + ' min' : '') +
                     '</div>' +
                     (m.nfoData && m.nfoData.rating ?
                         '<div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.5rem;color:var(--star-color)">' +
