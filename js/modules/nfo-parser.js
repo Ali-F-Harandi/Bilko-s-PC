@@ -9,7 +9,8 @@ function parseNFO(xmlText) {
         imdbId: null, tmdbId: null, premiered: null, title: null,
         originaltitle: null, onlineFanart: null, source: null,
         videoCodec: null, videoResolution: null, videoAspect: null,
-        audioCodec: null, audioChannels: null
+        audioCodec: null, audioChannels: null,
+        setName: null, setOverview: null
     };
     
     try {
@@ -76,6 +77,15 @@ function parseNFO(xmlText) {
         // Fanart
         var fanartEl = doc.querySelector('fanart thumb');
         if (fanartEl) res.onlineFanart = fanartEl.textContent.trim();
+        
+        // Movie set/collection info
+        var setEl = doc.querySelector('set');
+        if (setEl) {
+            var setNameEl = setEl.querySelector('name');
+            var setOverviewEl = setEl.querySelector('overview');
+            if (setNameEl) res.setName = setNameEl.textContent.trim();
+            if (setOverviewEl) res.setOverview = setOverviewEl.textContent.trim();
+        }
         
         // Directors & Writers
         var dirs = doc.getElementsByTagName('director');
