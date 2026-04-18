@@ -80,6 +80,35 @@ async function processMovieFolder(fh, rootName) {
     // Extract quality from filename
     var qm = videoHandle.name.match(/(\d{3,4}p|720p|1080p|2160p|4[kK]|HDR|Blu-?ray|WEB-?DL|WEBRip|HDTV)/i);
     
+    // Try to get full path from the directory handle chain
+    var fullPath = '';
+    try {
+        // Build path by traversing up the directory tree
+        var currentDir = fh;
+        var pathParts = [fh.name];
+        
+        // Go up until we reach the root or can't go further
+        while (currentDir && currentDir.parent) {
+            try {
+                var parentDir = currentDir.parent;
+                if (parentDir && parentDir.name) {
+                    pathParts.unshift(parentDir.name);
+                    currentDir = parentDir;
+                } else {
+                    break;
+                }
+            } catch(e) {
+                break;
+            }
+        }
+        
+        // Join path parts
+        fullPath = pathParts.join('/');
+    } catch(e) {
+        console.log('[Scanner Debug] Could not build full path:', e);
+        fullPath = rootName + '/' + fh.name;
+    }
+    
     return {
         movie: {
             title: match[1].trim(),
@@ -93,6 +122,7 @@ async function processMovieFolder(fh, rootName) {
             fileSize: vf.size,
             fileName: videoHandle.name,
             relativePath: rootName + '/' + fh.name,
+            fullPath: fullPath,
             posterUrl: null,
             logoUrl: null,
             fanartUrl: null,
