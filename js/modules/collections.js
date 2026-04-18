@@ -254,8 +254,8 @@
             console.error('[Collections Debug] Tab element not found for:', tabName);
         }
         
-        // Activate nav tab (only for movies and collections)
-        if (tabName === 'movies' || tabName === 'collections') {
+        // Activate nav tab (only for movies, tvshows, and collections)
+        if (tabName === 'movies' || tabName === 'tvshows' || tabName === 'collections') {
             var navTab = document.querySelector('.nav-tab[data-tab="' + tabName + '"]');
             if (navTab) {
                 navTab.classList.add('active');
@@ -277,6 +277,13 @@
         // Refresh collections if switching to collections tab
         if (tabName === 'collections') {
             renderCollections();
+        }
+        
+        // Refresh TV shows if switching to tvshows tab
+        if (tabName === 'tvshows') {
+            if (typeof window.UIRenderer !== 'undefined' && window.UIRenderer.renderTVShows) {
+                window.UIRenderer.renderTVShows();
+            }
         }
     };
 
