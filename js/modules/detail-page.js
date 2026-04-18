@@ -89,6 +89,26 @@ async function showDetailPage(idx) {
             '<p class="detail-plot">' + window.Utils.escHtml(nfo.plot) + '</p>' +
         '</div>';
     }
+    
+    // Movie set/collection section
+    if (nfo.setName) {
+        html += '<div class="detail-section">' +
+            '<div class="detail-section-title">Collection</div>' +
+            '<div style="background:var(--bg-card);border-radius:12px;padding:1.25rem;border:1px solid var(--border);margin-bottom:1rem">' +
+                '<h3 style="font-size:1.3rem;font-weight:700;margin-bottom:.5rem;color:var(--accent)">' + window.Utils.escHtml(nfo.setName) + '</h3>';
+        if (nfo.setOverview) {
+            html += '<p style="color:var(--text-secondary);line-height:1.6;margin-bottom:1rem">' + window.Utils.escHtml(nfo.setOverview) + '</p>';
+        }
+        html += '<button class="detail-secondary-btn" onclick="showSetMovies(\'' + window.Utils.escHtml(nfo.setName).replace(/'/g, "\\'") + '\')" style="padding:.6rem 1.2rem;font-size:.9rem">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px">' +
+                '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+                '<path d="M9 3v18M3 9h18M3 15h18M15 3v18"/>' +
+            '</svg>' +
+            'View All Movies in Collection' +
+        '</button>' +
+            '</div>' +
+        '</div>';
+    }
 
     html += '<div class="detail-section">' +
         '<div class="detail-section-title">Information</div>' +
@@ -259,5 +279,95 @@ async function copyMoviePath(idx) {
     }
 }
 
+// Show all movies in a collection/set
+function showSetMovies(setName) {
+    var setMovies = window.allMovies.filter(function(m) {
+        return m.nfoData && m.nfoData.setName === setName;
+    });
+    
+    if (setMovies.length === 0) {
+        window.Utils.showToast('No other movies found in this collection', 'warning');
+        return;
+    }
+    
+    // Create a temporary view showing only these movies
+    var gridContainer = document.querySelector('.main-content');
+    var originalContent = gridContainer.innerHTML;
+    
+    // Build the set view HTML
+    var html = '<div style="padding:2rem">' +
+        '<button onclick="closeSetView()" class="detail-back-btn" style="margin-bottom:1.5rem">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' +
+            'Back to Library' +
+        '</button>' +
+        '<h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.5rem">' + window.Utils.escHtml(setName) + '</h2>' +
+        '<p style="color:var(--text-secondary);margin-bottom:2rem">' + setMovies.length + ' movie' + (setMovies.length !== 1 ? 's' : '') + ' in collection</p>' +
+        '<div id="setMovieGrid" class="movie-grid"></div>' +
+    '</div>';
+    
+    gridContainer.innerHTML = html;
+    
+    // Render movie cards for the set
+    setTimeout(function() {
+        var gridEl = document.getElementById('setMovieGrid');
+        if (!gridEl) return;
+        
+        var currentView = window.currentViewMode || 'grid';
+        
+        setMovies.forEach(function(m, idx) {
+            var card = document.createElement('div');
+            card.className = 'movie-card';
+            card.onclick = function() {
+                // Find this movie in filteredMovies and show detail
+                var realIdx = window.allMovies.indexOf(m);
+                window.filteredMovies = window.allMovies;
+                window.showDetailPage(realIdx);
+            };
+            
+            var posterHtml = '';
+            if (m.posterUrl) {
+                posterHtml = '<img class="poster-img loaded" src="' + m.posterUrl + '" alt="' + window.Utils.escHtml(m.title) + '">';
+            } else {
+                posterHtml = '<div class="no-poster-placeholder">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+                        '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+                        '<circle cx="8.5" cy="8.5" r="1.5"/>' +
+                        '<path d="M21 15l-5-5L5 21"/>' +
+                    '</svg>' +
+                    'No Poster' +
+                '</div>';
+            }
+            
+            var qualityBadge = m.quality ? '<span class="movie-quality">' + window.Utils.escHtml(m.quality) + '</span>' : '';
+            var ratingBadge = m.nfoData && m.nfoData.rating ? 
+                '<span class="rating-badge">★ ' + m.nfoData.rating.toFixed(1) + '</span>' : '';
+            
+            card.innerHTML = '<div class="poster-container">' +
+                posterHtml +
+                '<div class="card-overlay">' +
+                    '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>' +
+                '</div>' +
+                qualityBadge +
+                ratingBadge +
+            '</div>' +
+            '<div class="card-info">' +
+                '<div class="movie-title">' + window.Utils.escHtml(m.title) + '</div>' +
+                '<div class="movie-year">' + m.year + '</div>' +
+                qualityBadge +
+                (m.nfoData && m.nfoData.genres && m.nfoData.genres.length ? 
+                    '<div class="movie-genre">' + window.Utils.escHtml(m.nfoData.genres.slice(0, 2).join(', ')) + '</div>' : '') +
+                '<div class="movie-filesize">' + window.Utils.formatBytes(m.fileSize) + '</div>' +
+            '</div>';
+            
+            gridEl.appendChild(card);
+        });
+    }, 100);
+}
+
+function closeSetView() {
+    // Reload the main view
+    window.renderMovieList();
+}
+
 // Export for use in other modules
-window.DetailPage = { showDetailPage, closeDetailPage, copyMoviePath };
+window.DetailPage = { showDetailPage, closeDetailPage, copyMoviePath, showSetMovies, closeSetView };
