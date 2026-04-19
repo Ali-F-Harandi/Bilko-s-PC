@@ -729,11 +729,10 @@ function renderTVShows() {
         var seasonInfo = m.totalSeasons + ' Season' + (m.totalSeasons > 1 ? 's' : '') + ' \u2022 ' + m.totalEpisodes + ' Episode' + (m.totalEpisodes > 1 ? 's' : '');
 
         // Badge logic
-        var badgeHtml = '<div class="movie-quality-stack">' +
-            '<span class="movie-quality tv-badge">TV Series</span>' +
-            (isAnime(m) ? '<span class="movie-quality anime-badge">Anime</span>' : '') +
-            (!isAnime(m) && isAnimation(m) ? '<span class="movie-quality animation-badge">Animation</span>' : '') +
-        '</div>';
+        var badgeHtml = '<span class="movie-quality tv-badge">TV Series</span>';
+        var extraBadgeHtml = isAnime(m)
+            ? '<span class="movie-extra-badge anime-badge">Anime</span>'
+            : (!isAnime(m) && isAnimation(m) ? '<span class="movie-extra-badge animation-badge">Animation</span>' : '');
 
         html += '<div class="movie-card tvshow-card" onclick="showTVShowFromTab(' + realIdx + ')">' +
             '<div class="poster-container">' +
@@ -761,6 +760,7 @@ function renderTVShows() {
             '</div>' +
             '<div class="card-info">' +
                 '<div class="movie-title">' + window.Utils.escHtml(m.title) + '</div>' +
+                extraBadgeHtml +
                 '<div class="movie-year">' + m.year + ' \u2022 ' + seasonInfo + '</div>' +
                 (m.nfoData && m.nfoData.genres && m.nfoData.genres.length ?
                     '<div class="movie-genre">' + m.nfoData.genres.map(window.Utils.escHtml).join(', ') + '</div>' : '') +
@@ -1170,3 +1170,4 @@ window.switchTab = function(tabName) {
         renderAnimeTab();
     }
 };
+z
