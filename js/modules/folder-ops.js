@@ -212,6 +212,12 @@ async function startScanning(dirs) {
     document.getElementById('appContainer').classList.add('active');
     window.UIRenderer.updateStats();
     window.UIRenderer.filterMovies();
+    // Render additional tabs
+    if (typeof window.UIRenderer.renderAllTab === 'function') window.UIRenderer.renderAllTab();
+    if (typeof window.UIRenderer.renderAnimationTab === 'function') window.UIRenderer.renderAnimationTab();
+    if (typeof window.UIRenderer.renderAnimeTab === 'function') window.UIRenderer.renderAnimeTab();
+    // Default to "All" tab on first load
+    window.switchTab('all');
     var movieCount = window.allMovies.filter(function(m) { return !m.isTVShow; }).length;
     var tvShowCount = window.allMovies.filter(function(m) { return m.isTVShow; }).length;
     var msg = 'Found ' + window.allMovies.length + ' titles';
