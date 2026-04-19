@@ -114,10 +114,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background
 .movie-card:hover{transform:translateY(-5px);border-color:var(--accent);box-shadow:0 12px 40px rgba(0,0,0,.4)}
 .movie-card:hover .card-overlay{opacity:1}
 .poster-container{position:relative;aspect-ratio:2/3;overflow:hidden;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center}
-.poster-img{width:100%;height:100%;object-fit:cover;transition:.3s;display:none}
-.poster-img.loaded{display:block}
+.poster-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s ease,transform .3s ease}
+.poster-img.loaded{opacity:1}
 .movie-card:hover .poster-img.loaded{transform:scale(1.05)}
-.no-poster-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;inset:0;color:var(--text-secondary);font-size:.8rem;padding:1rem;text-align:center;z-index:1}
+.no-poster-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;inset:0;color:var(--text-secondary);font-size:.8rem;padding:1rem;text-align:center;z-index:1;background:linear-gradient(90deg,var(--bg-card) 25%,var(--bg-hover) 50%,var(--bg-card) 75%);background-size:200% 100%;animation:skeleton-shimmer 1.6s ease-in-out infinite}
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 [data-theme="light"] .no-poster-placeholder{color:#515154}
 .no-poster-placeholder svg{width:48px;height:48px;margin-bottom:.5rem;opacity:.5}
 .logo-img{position:absolute;top:8px;left:8px;max-width:60px;height:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));display:none;z-index:2}
@@ -139,8 +140,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background
 .movie-list-item{display:flex;align-items:center;gap:1rem;padding:.75rem 1rem;background:var(--bg-card);border-radius:8px;cursor:pointer;transition:.3s;border:1px solid transparent}
 .movie-list-item:hover{background:var(--bg-hover);border-color:var(--accent)}
 .list-poster{width:50px;height:75px;border-radius:6px;overflow:hidden;flex-shrink:0;background:var(--bg-secondary)}
-.list-poster .poster-img{display:none}
-.list-poster .poster-img.loaded{display:block}
+.list-poster .poster-img{opacity:0}
+.list-poster .poster-img.loaded{opacity:1}
 .list-info{flex:1;min-width:0}
 .list-title{font-size:.95rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-meta{display:flex;gap:1rem;font-size:.8rem;color:var(--text-secondary);margin-top:.25rem;flex-wrap:wrap}
@@ -151,8 +152,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background
 .movie-detail-card{display:flex;gap:1.25rem;background:var(--bg-card);border-radius:12px;overflow:hidden;cursor:pointer;transition:.3s;border:1px solid transparent;padding:1rem}
 .movie-detail-card:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-2px)}
 .detail-poster{width:120px;flex-shrink:0;background:var(--bg-secondary);aspect-ratio:2/3;border-radius:8px;overflow:hidden}
-.detail-poster .poster-img{display:none}
-.detail-poster .poster-img.loaded{display:block}
+.detail-poster .poster-img{opacity:0}
+.detail-poster .poster-img.loaded{opacity:1}
 .detail-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .detail-title{font-size:1.1rem;font-weight:700;margin-bottom:.3rem}
 .detail-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem}
