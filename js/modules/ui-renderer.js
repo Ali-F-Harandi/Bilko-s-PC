@@ -488,12 +488,10 @@ function buildCardGrid(items, tabId) {
             var hasPoster = !!m.posterHandle;
             var isTV = m.isTVShow;
             var episodesInfo = isTV ? (m.totalEpisodes + ' eps' + (m.totalSeasons ? ' \u2022 ' + m.totalSeasons + ' seasons' : '')) : '';
-            var isAnim = isAnimation(m);
-            var isAnm = isAnime(m);
             var badgeHtml = '';
             if (isTV) badgeHtml = '<span class="movie-quality tv-badge">TV Series</span>';
-            else if (isAnm) badgeHtml = '<span class="movie-quality anime-badge">Anime</span>';
-            else if (isAnim) badgeHtml = '<span class="movie-quality animation-badge">Animation</span>';
+            else if (isAnime(m)) badgeHtml = '<span class="movie-quality anime-badge">Anime</span>';
+            else if (isAnimation(m)) badgeHtml = '<span class="movie-quality animation-badge">Animation</span>';
 
             var _midx = window.allMovies.indexOf(m);
             return '<div class="movie-card" onclick="showItemFromTab(' + _midx + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + _midx + ')" title="Double-click to play">' +
@@ -729,10 +727,18 @@ function renderTVShows() {
         var seasonInfo = m.totalSeasons + ' Season' + (m.totalSeasons > 1 ? 's' : '') + ' \u2022 ' + m.totalEpisodes + ' Episode' + (m.totalEpisodes > 1 ? 's' : '');
 
         // Badge logic
+        var isAnim = isAnimation(m);
+        var isAnm = isAnime(m);
         var badgeHtml = '<span class="movie-quality tv-badge">TV Series</span>';
-        var extraBadgeHtml = isAnime(m)
-            ? '<span class="movie-extra-badge anime-badge">Anime</span>'
-            : (!isAnime(m) && isAnimation(m) ? '<span class="movie-extra-badge animation-badge">Animation</span>' : '');
+        var extraBadgeHtml = '';
+        if (!m.isTVShow) {
+            if (isAnm) extraBadgeHtml = '<span class="movie-extra-badge anime-badge">Anime</span>';
+            else if (isAnim) extraBadgeHtml = '<span class="movie-extra-badge animation-badge">Animation</span>';
+        } else if (isAnm) {
+            extraBadgeHtml = '<span class="movie-extra-badge anime-badge">Anime</span>';
+        } else if (isAnim) {
+            extraBadgeHtml = '<span class="movie-extra-badge animation-badge">Animation</span>';
+        }
 
         html += '<div class="movie-card tvshow-card" onclick="showTVShowFromTab(' + realIdx + ')">' +
             '<div class="poster-container">' +
@@ -1170,4 +1176,3 @@ window.switchTab = function(tabName) {
         renderAnimeTab();
     }
 };
-z
