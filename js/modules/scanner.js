@@ -9,40 +9,19 @@
  */
 
 /**
- * Build full absolute path by traversing up the directory tree
- * Creates a complete path like "D:/Movies/American Reunion (2012)"
+ * Build the best available path for a folder handle.
  * 
- * @param {FileSystemDirectoryHandle} fh - Folder handle to build path from
- * @returns {string} Full absolute path
+ * Note: The File System Access API does not expose true absolute OS paths
+ * (e.g. C:\Users\...) for browser security reasons. The best we can do is
+ * rootFolderName/movieFolderName — which is what this returns.
+ * 
+ * @param {FileSystemDirectoryHandle} fh - Folder handle
+ * @param {string} rootName - Name of the root library folder selected by user
+ * @returns {string} Best available path (e.g. "Movies/Inception (2010)")
  */
-function buildFullPath(fh) {
-    var fullPath = '';
-    try {
-        var currentDir = fh;
-        var pathParts = [fh.name];
-        
-        // Traverse parent directories until reaching root
-        while (currentDir && currentDir.parent) {
-            try {
-                var parentDir = currentDir.parent;
-                if (parentDir && parentDir.name) {
-                    pathParts.unshift(parentDir.name);
-                    currentDir = parentDir;
-                } else {
-                    break;
-                }
-            } catch(e) {
-                break;
-            }
-        }
-        
-        // Join path parts with forward slashes for cross-platform compatibility
-        fullPath = pathParts.join('/');
-    } catch(e) {
-        console.log('[Scanner Debug] Could not build full path:', e);
-    }
-    
-    return fullPath;
+function buildFullPath(fh, rootName) {
+    if (rootName) return rootName + '/' + fh.name;
+    return fh.name;
 }
 
 // Supported video file extensions
@@ -147,14 +126,8 @@ async function processMovieFolder(fh, rootName) {
     // Extract quality information from filename (e.g., 1080p, 4K, BluRay)
     var qm = videoHandle.name.match(/(\d{3,4}p|720p|1080p|2160p|4[kK]|HDR|Blu-?ray|WEB-?DL|WEBRip|HDTV)/i);
     
-    // Build full absolute path using shared utility function
-    var fullPath = buildFullPath(fh);
-    if (!fullPath) {
-        fullPath = rootName + '/' + fh.name;
-    }
-    
-    // Store root name for reference (used as fallback for fullPath)
-    var libraryRoot = rootName;
+    // Build best available path (rootFolder/movieFolder)
+    var fullPath = buildFullPath(fh, rootName);
     
     // Scan for .actors subfolder and collect actor image handles
     var actorsFolderHandle = null;
@@ -292,12 +265,9 @@ async function processTVShowFolder(fh, rootName) {
         }
     }
     
-    // Build full absolute path using shared utility function
-    var fullPath = buildFullPath(fh);
-    if (!fullPath) {
-        fullPath = rootName + '/' + fh.name;
-    }
-    
+    // Build best available path (rootFolder/movieFolder)
+    var fullPath = buildFullPath(fh, rootName);
+
     // Sort season folders by season number
     seasonFolders.sort(function(a, b) {
         return a.seasonNumber - b.seasonNumber;

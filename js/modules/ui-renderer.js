@@ -15,6 +15,76 @@ var VIEW_MODES = {
 };
 
 // ============================================================================
+// LAZY IMAGE LOADING — IntersectionObserver
+// Images are observed as they enter the viewport (+ 150px margin) and loaded
+// on demand instead of all at once, which massively improves render performance
+// for large libraries.
+// ============================================================================
+var _posterObserver = null;
+
+function _getPosterObserver() {
+    if (_posterObserver) return _posterObserver;
+    _posterObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (!entry.isIntersecting) return;
+            _posterObserver.unobserve(entry.target);
+            _loadSingleImage(entry.target);
+        });
+    }, { rootMargin: '150px 0px', threshold: 0 });
+    return _posterObserver;
+}
+
+async function _loadSingleImage(img) {
+    var movieIdx = parseInt(img.dataset.movieIdx);
+    var m = window.allMovies[movieIdx];
+    if (!m) return;
+
+    if (img.classList.contains('logo-img')) {
+        if (!m.logoHandle) return;
+        if (!m.logoUrl) {
+            try {
+                var lf = await m.logoHandle.getFile();
+                m.logoUrl = URL.createObjectURL(lf);
+            } catch(e) { return; }
+        }
+        img.src = m.logoUrl;
+        img.classList.add('loaded');
+    } else {
+        if (!m.posterHandle) return;
+        if (!m.posterUrl) {
+            try {
+                var pf = await m.posterHandle.getFile();
+                m.posterUrl = URL.createObjectURL(pf);
+            } catch(e) { return; }
+        }
+        img.src = m.posterUrl;
+        img.classList.add('loaded');
+        var ph = img.parentElement && img.parentElement.querySelector('.no-poster-placeholder');
+        if (ph) ph.style.display = 'none';
+    }
+}
+
+function observeImages(container) {
+    var observer = _getPosterObserver();
+    container.querySelectorAll('.poster-img[data-movie-idx], .logo-img[data-movie-idx]').forEach(function(img) {
+        observer.observe(img);
+    });
+}
+
+// ============================================================================
+// ACTIVE TAB DETECTION
+// ============================================================================
+function _getActiveTabName() {
+    var activeNav = document.querySelector('.nav-tab.active');
+    return activeNav ? activeNav.dataset.tab : 'all';
+}
+
+// ============================================================================
+// SEARCH DEBOUNCE
+// ============================================================================
+var _filterDebounceTimer = null;
+
+// ============================================================================
 // UTILITY: Check if a movie is animation
 // ============================================================================
 function isAnimation(m) {
@@ -186,7 +256,7 @@ function toggleSkippedPanel() {
 // ============================================================================
 // MOVIES TAB FILTER
 // ============================================================================
-function filterMovies() {
+function _doFilterMovies() {
     var q = document.getElementById('searchInput').value.toLowerCase().trim();
     var s = document.getElementById('sortSelect').value;
     var genreSelect = document.getElementById('moviesGenreSelect');
@@ -198,13 +268,28 @@ function filterMovies() {
 
     sortItems(window.filteredMovies, s);
 
-    renderMovies();
-    // Also refresh other tabs
-    renderTVShows();
-    renderAllTab();
-    renderAnimationTab();
-    renderAnimeTab();
+    // Only re-render the currently visible tab for performance.
+    // When the user switches tabs, switchTab() triggers a fresh render anyway.
+    var activeTab = _getActiveTabName();
+    if (activeTab === 'movies') {
+        renderMovies();
+    } else if (activeTab === 'all') {
+        renderAllTab();
+    } else if (activeTab === 'animation') {
+        renderAnimationTab();
+    } else if (activeTab === 'anime') {
+        renderAnimeTab();
+    } else if (activeTab === 'tvshows') {
+        renderTVShows();
+    } else {
+        renderMovies();
+    }
     populateGenreDropdowns();
+}
+
+function filterMovies() {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(_doFilterMovies, 180);
 }
 
 // ============================================================================
@@ -253,7 +338,7 @@ function renderAllTab() {
 
     emptyState.style.display = 'none';
     container.innerHTML = buildCardGrid(items, 'all');
-    loadTabAssets('all');
+    observeImages(container);
     populateGenreDropdowns();
 }
 
@@ -293,7 +378,7 @@ function renderAnimationTab() {
 
     emptyState.style.display = 'none';
     container.innerHTML = buildCardGrid(items, 'animation');
-    loadTabAssets('animation');
+    observeImages(container);
 }
 
 // ============================================================================
@@ -332,7 +417,7 @@ function renderAnimeTab() {
 
     emptyState.style.display = 'none';
     container.innerHTML = buildCardGrid(items, 'anime');
-    loadTabAssets('anime');
+    observeImages(container);
 }
 
 // ============================================================================
@@ -367,7 +452,7 @@ function renderTopRatedRow(container) {
         html += '<div class="top-rated-card" onclick="showItemFromTab(' + realIdx + ',\'all\')" ondblclick="playItemDirectly(' + realIdx + ')" title="Double-click to play">' +
             '<div class="poster-container">' +
                 '<span class="top-rated-rank">' + (idx + 1) + '</span>' +
-                '<img class="poster-img" data-tab="toprated" data-tab-idx="' + idx + '">' +
+                '<img class="poster-img" data-movie-idx="' + realIdx + '">' +
                 '<div class="no-poster-placeholder"' + (hasPoster ? ' style="display:none"' : '') + '>' +
                     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
                         '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
@@ -390,33 +475,7 @@ function renderTopRatedRow(container) {
 
     html += '</div></div>';
     container.innerHTML = html;
-
-    // Load posters for top rated cards
-    var posters = container.querySelectorAll('.poster-img[data-tab="toprated"]');
-    for (var i = 0; i < posters.length; i++) {
-        (function(img, idx) {
-            (async function() {
-                var m = rated[idx];
-                if (!m || !m.posterHandle) return;
-                if (m.posterUrl) {
-                    img.src = m.posterUrl;
-                    img.classList.add('loaded');
-                    var placeholder = img.parentElement.querySelector('.no-poster-placeholder');
-                    if (placeholder) placeholder.style.display = 'none';
-                    return;
-                }
-                try {
-                    var f = await m.posterHandle.getFile();
-                    if (m.posterUrl) URL.revokeObjectURL(m.posterUrl);
-                    m.posterUrl = URL.createObjectURL(f);
-                    img.src = m.posterUrl;
-                    img.classList.add('loaded');
-                    var placeholder = img.parentElement.querySelector('.no-poster-placeholder');
-                    if (placeholder) placeholder.style.display = 'none';
-                } catch(e) {}
-            })();
-        })(posters[i], i);
-    }
+    observeImages(container);
 }
 
 // ============================================================================
@@ -436,10 +495,11 @@ function buildCardGrid(items, tabId) {
             else if (isAnm) badgeHtml = '<span class="movie-quality anime-badge">Anime</span>';
             else if (isAnim) badgeHtml = '<span class="movie-quality animation-badge">Animation</span>';
 
-            return '<div class="movie-card" onclick="showItemFromTab(' + window.allMovies.indexOf(m) + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + window.allMovies.indexOf(m) + ')" title="Double-click to play">' +
+            var _midx = window.allMovies.indexOf(m);
+            return '<div class="movie-card" onclick="showItemFromTab(' + _midx + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + _midx + ')" title="Double-click to play">' +
                 '<div class="poster-container">' +
-                    (m.logoHandle ? '<img class="logo-img" data-tab="' + tabId + '" data-tab-idx="' + i + '">' : '') +
-                    '<img class="poster-img" data-tab="' + tabId + '" data-tab-idx="' + i + '">' +
+                    (m.logoHandle ? '<img class="logo-img" data-movie-idx="' + _midx + '">' : '') +
+                    '<img class="poster-img" data-movie-idx="' + _midx + '">' +
                     '<div class="no-poster-placeholder"' + (hasPoster ? ' style="display:none"' : '') + '>' +
                         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
                             '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
@@ -476,9 +536,10 @@ function buildCardGrid(items, tabId) {
         }).join('') + '</div>';
     } else if (currentView === 'detail') {
         return '<div class="movie-detail-grid">' + items.map(function(m, i) {
-            return '<div class="movie-detail-card" onclick="showItemFromTab(' + window.allMovies.indexOf(m) + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + window.allMovies.indexOf(m) + ')">' +
+            var _midx2 = window.allMovies.indexOf(m);
+            return '<div class="movie-detail-card" onclick="showItemFromTab(' + _midx2 + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + _midx2 + ')">' +
                 '<div class="detail-poster">' +
-                    '<img class="poster-img" data-tab="' + tabId + '" data-tab-idx="' + i + '">' +
+                    '<img class="poster-img" data-movie-idx="' + _midx2 + '">' +
                 '</div>' +
                 '<div class="detail-info">' +
                     '<div class="detail-title">' + window.Utils.escHtml(m.title) + '</div>' +
@@ -511,9 +572,10 @@ function buildCardGrid(items, tabId) {
         }).join('') + '</div>';
     } else if (currentView === VIEW_MODES.LIST) {
         return '<div class="movie-list">' + items.map(function(m, i) {
-            return '<div class="movie-list-item" onclick="showItemFromTab(' + window.allMovies.indexOf(m) + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + window.allMovies.indexOf(m) + ')">' +
+            var _midx3 = window.allMovies.indexOf(m);
+            return '<div class="movie-list-item" onclick="showItemFromTab(' + _midx3 + ',\'' + tabId + '\')" ondblclick="playItemDirectly(' + _midx3 + ')">' +
                 '<div class="list-poster">' +
-                    '<img class="poster-img" data-tab="' + tabId + '" data-tab-idx="' + i + '">' +
+                    '<img class="poster-img" data-movie-idx="' + _midx3 + '">' +
                 '</div>' +
                 '<div class="list-info">' +
                     '<div class="list-title">' + window.Utils.escHtml(m.title) + '</div>' +
@@ -883,10 +945,11 @@ function renderMovies() {
             var hasPoster = !!m.posterHandle;
             var isTV = m.isTVShow;
             var episodesInfo = isTV ? (m.totalEpisodes + ' eps' + (m.totalSeasons ? ' \u2022 ' + m.totalSeasons + ' seasons' : '')) : '';
+            var _rmidx = window.allMovies.indexOf(m);
             return '<div class="movie-card" onclick="showDetailPage(' + i + ')" ondblclick="window.VideoPlayer.playMovie(' + i + ')" title="Double-click to play">' +
                 '<div class="poster-container">' +
-                    (m.logoHandle ? '<img class="logo-img" data-idx="' + i + '">' : '') +
-                    '<img class="poster-img" data-idx="' + i + '">' +
+                    (m.logoHandle ? '<img class="logo-img" data-movie-idx="' + _rmidx + '">' : '') +
+                    '<img class="poster-img" data-movie-idx="' + _rmidx + '">' +
                     // Always show placeholder icon, hidden when poster loads
                     '<div class="no-poster-placeholder"' + (hasPoster ? ' style="display:none"' : '') + '>' +
                         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
@@ -924,9 +987,10 @@ function renderMovies() {
         }).join('') + '</div>';
     } else if (currentView === 'detail') {
         html = '<div class="movie-detail-grid">' + window.filteredMovies.map(function(m, i) {
+            var _rdidx = window.allMovies.indexOf(m);
             return '<div class="movie-detail-card" onclick="showDetailPage(' + i + ')" ondblclick="window.VideoPlayer.playMovie(' + i + ')">' +
                 '<div class="detail-poster">' +
-                    '<img class="poster-img" data-idx="' + i + '">' +
+                    '<img class="poster-img" data-movie-idx="' + _rdidx + '">' +
                 '</div>' +
                 '<div class="detail-info">' +
                     '<div class="detail-title">' + window.Utils.escHtml(m.title) + '</div>' +
@@ -960,9 +1024,10 @@ function renderMovies() {
     } else if (currentView === VIEW_MODES.LIST) {
         // List view: compact horizontal list with essential info
         html = '<div class="movie-list">' + window.filteredMovies.map(function(m, i) {
+            var _rlidx = window.allMovies.indexOf(m);
             return '<div class="movie-list-item" onclick="showDetailPage(' + i + ')" ondblclick="window.VideoPlayer.playMovie(' + i + ')">' +
                 '<div class="list-poster">' +
-                    '<img class="poster-img" data-idx="' + i + '">' +
+                    '<img class="poster-img" data-movie-idx="' + _rlidx + '">' +
                 '</div>' +
                 '<div class="list-info">' +
                     '<div class="list-title">' + window.Utils.escHtml(m.title) + '</div>' +
@@ -983,7 +1048,7 @@ function renderMovies() {
     }
 
     container.innerHTML = html;
-    loadAssets();
+    observeImages(container);
 }
 
 // Export for use in other modules
@@ -1002,7 +1067,8 @@ window.UIRenderer = {
     renderTopRatedRow: renderTopRatedRow,
     populateGenreDropdowns: populateGenreDropdowns,
     isAnimation: isAnimation,
-    isAnime: isAnime
+    isAnime: isAnime,
+    observeImages: observeImages
 };
 
 // Also expose as global functions for inline HTML handlers
@@ -1077,6 +1143,10 @@ window.switchTab = function(tabName) {
         if (typeof window.Collections !== 'undefined' && window.Collections.renderCollections) {
             window.Collections.renderCollections();
         }
+    }
+
+    if (tabName === 'movies') {
+        renderMovies();
     }
 
     if (tabName === 'tvshows') {
