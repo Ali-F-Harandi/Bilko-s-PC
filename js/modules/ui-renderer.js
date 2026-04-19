@@ -694,7 +694,10 @@ function renderTVShows() {
 
     if (!container) return;
 
-    var tvShows = window.allMovies.filter(function(m) { return m.isTVShow; });
+    var q = document.getElementById('searchInput').value.toLowerCase().trim();
+    var tvShows = window.allMovies.filter(function(m) {
+        return m.isTVShow && matchesSearch(m, q);
+    });
 
     // Sort TV shows
     var sortSelect = document.getElementById('tvSortSelect');
